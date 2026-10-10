@@ -5,7 +5,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from src.layers import DenseLayer, ActivationLayer
-from src.functions import Activation, Loss, nn_forward, nn_backward
+from src.activations import Activation
+from src.losses import Loss
+from src.network import nn_forward, nn_backward
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / 'digit-web' / 'dist'

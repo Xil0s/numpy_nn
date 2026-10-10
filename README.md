@@ -44,7 +44,9 @@ This checks browser/Python prediction agreement on saved validation samples and 
 ## Files
 
 - `src/layers.py`: dense, activation, and unfinished convolution layers.
-- `src/functions.py`: activations, losses, and network forward/backward passes.
+- `src/activations.py`: activation functions and their backward passes.
+- `src/losses.py`: loss functions and their gradients.
+- `src/network.py`: network forward/backward passes.
 - `src/learn.py`: training loop with validation losses.
 - `neurnet.ipynb`: MNIST training walkthrough.
 - `train_export.py`: training script and model exporter.

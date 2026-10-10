@@ -1,5 +1,6 @@
 import numpy as np
-from .functions import nn_backward, nn_forward, Loss
+from .network import nn_backward, nn_forward
+from .losses import Loss
 from .layers import Layer
 
 def learn(epochs: int, X: np.ndarray,

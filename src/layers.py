@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from .functions import Activation
+from .activations import Activation
 
 class Layer(ABC):
     @abstractmethod
