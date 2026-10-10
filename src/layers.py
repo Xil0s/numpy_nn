@@ -48,3 +48,15 @@ class ConvolutionalLayer(Layer):
 
     def backward(self, x : np.ndarray, upstream_gradient : np.ndarray):
         pass
+
+class PoolingLayer(Layer):
+    pass
+
+class MaxPoolingLayer(PoolingLayer):
+    pass
+
+class AvgPoolingLayer(PoolingLayer):
+    pass
+
+class FlattenLayer(Layer):
+    pass
