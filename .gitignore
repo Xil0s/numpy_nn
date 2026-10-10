@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.tar.gz
+# Keep the existing Sites checkout and hosting identity local.
+digit-web/.git/
+digit-web/.openai/
+digit-web/.sites-runtime/

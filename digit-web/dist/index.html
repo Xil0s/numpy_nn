@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neurnet · Digit reader</title>
+<meta name="description" content="Draw a digit and see your neural network's prediction and confidence.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141923'/%3E%3Cpath d='M10 9h12l-8 15' fill='none' stroke='%237af0b7' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script src="inference.js" defer></script><script src="app.js" defer></script>
+</head>
+<body>
+<main>
+<header><span class="brand">neurnet<span class="accent">.</span></span><span class="badge">Digit reader</span></header>
+<div class="intro"><h1>What number is that?</h1><p>Draw one digit, from 0 to 9.</p></div>
+<div class="workspace">
+<section class="drawing" aria-label="Drawing pad">
+<div class="canvas-wrap"><canvas id="pad" width="280" height="280" aria-label="Draw a handwritten digit with your mouse or finger"></canvas></div>
+<div class="actions"><button id="clear" type="button" class="secondary">Clear</button><button id="predict" type="button" disabled>Read digit</button></div>
+<p id="status" role="status">Loading your model…</p>
+</section>
+<section class="results" aria-label="Prediction">
+<div class="result-top"><div><p class="eyebrow">Prediction</p><div id="digit">—</div></div><div class="confidence"><span id="confidence">—</span><span>confidence</span></div></div>
+<div id="bars" aria-label="Confidence for each digit"></div>
+<div class="preview-row"><canvas id="preview" width="28" height="28" aria-label="Preprocessed 28 by 28 pixel model input"></canvas><p>The 28 × 28 image your model sees.<br>Draw large and leave a little room around the edges.</p></div>
+</section>
+</div>
+<footer><span>Learning rate <strong>1</strong> · <strong>1000</strong> epochs</span><span>Confidence is the model’s probability, not a guarantee.</span></footer>
+</main>
+</body></html>
