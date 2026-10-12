@@ -39,39 +39,63 @@ class DenseLayer(Layer):
 
 
 class ConvolutionalLayer(Layer):
-    def __init__(self, output_n : int, kernel_size : int):
+    """Stride-1 valid convolution on (batch, channels, height, width)."""
+    def __init__(self, input_n: int, output_n: int, kernel_size: int):
+   
+        
         self.kernel_size = kernel_size
-        
-        kernel = np.random.randn(output_n, kernel_size, kernel_size)
-        b = np.zeros((1, output_n))
-        self.weights = {"kernel": kernel, "b": b}
+        self.input_n = input_n
+        kernel = np.random.randn(output_n, input_n, kernel_size, kernel_size)
+        kernel *= np.sqrt(2 / (input_n * kernel_size ** 2))
+        self.weights = {"kernel": kernel, "b": np.zeros((1, output_n))}
 
-    def forward(self, x : np.ndarray):
-        return fftconvolve(
-                x[:, None, :, :],
-                self.weights["kernel"][None, :, :, :],
-                mode="valid",
-                axes=(-2, -1)
-                ) + self.weights["b"].reshape(1, -1, 1, 1)
-    
-    def backward(self, x : np.ndarray, upstream_gradient : np.ndarray):
-        dkernel = fftconvolve(
-                x[:, None, :, :],
-                upstream_gradient[:, :, ::-1, ::-1],
-                mode="valid",
-                axes=(-2, -1)
-                ).sum(axis = 0)[:,::-1, ::-1]
-        
-        db = np.sum(upstream_gradient, axis=(0, 2, 3)).reshape(1, -1)
-        
-        dx = fftconvolve(
-                upstream_gradient,
-                self.weights["kernel"][None, :, ::-1, ::-1],
-                mode="full",
-                axes=(-2, -1)
-                ).sum(axis=1)
-        
-        return dx, {"kernel": dkernel, "b": db}
+    def _image_input(self, x):
+        # Preserve support for the original single-channel (batch, H, W) input.
+        images = x[:, None, :, :] if x.ndim == 3 else x
+        if images.ndim != 4 or images.shape[1] != self.input_n:
+            raise ValueError(f"Expected (batch, {self.input_n}, height, width)")
+        if min(images.shape[-2:]) < self.kernel_size:
+            raise ValueError("Kernel cannot be larger than the input image")
+        return images
+
+    def forward(self, x: np.ndarray):
+        images = self._image_input(x)
+        kernel = self.weights["kernel"]
+        output = None
+        # Sum each input channel's contribution to every output filter.
+        for c in range(self.input_n):
+            contribution = fftconvolve(
+                images[:, None, c, :, :], kernel[None, :, c, :, :],
+                mode="valid", axes=(-2, -1),
+            )
+            if output is None:
+                output = contribution
+            else:
+                output += contribution
+        return output + self.weights["b"].reshape(1, -1, 1, 1)
+
+    def backward(self, x: np.ndarray, upstream_gradient: np.ndarray):
+        images = self._image_input(x)
+        kernel = self.weights["kernel"]
+        expected = (images.shape[0], kernel.shape[0],
+                    images.shape[2] - self.kernel_size + 1,
+                    images.shape[3] - self.kernel_size + 1)
+        if upstream_gradient.shape != expected:
+            raise ValueError(f"Expected upstream gradient shape {expected}")
+        dtype = np.result_type(images, kernel, upstream_gradient)
+        dkernel = np.zeros(kernel.shape, dtype=dtype)
+        dx = np.zeros(images.shape, dtype=dtype)
+        for c in range(self.input_n):
+            dkernel[:, c] = fftconvolve(
+                images[:, None, c, :, :], upstream_gradient[:, :, ::-1, ::-1],
+                mode="valid", axes=(-2, -1),
+            ).sum(axis=0)[:, ::-1, ::-1]
+            dx[:, c] = fftconvolve(
+                upstream_gradient, kernel[None, :, c, ::-1, ::-1],
+                mode="full", axes=(-2, -1),
+            ).sum(axis=1)
+        db = upstream_gradient.sum(axis=(0, 2, 3)).reshape(1, -1)
+        return (dx[:, 0] if x.ndim == 3 else dx), {"kernel": dkernel, "b": db}
 
 class PoolingLayer(Layer):
     pass
