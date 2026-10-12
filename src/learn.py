@@ -25,9 +25,7 @@ def learn(epochs: int, X: np.ndarray,
 
         gradients = nn_backward(Y, layers, layers_data, loss_f)
         for layer, grad in zip(layers, gradients):
-            dw, db = grad
-            if dw is not None and db is not None:
-                layer.W -= learning_rate * dw
-                layer.b -= learning_rate * db
+            for k, dk in grad.items():
+                layer.weights[k] -= learning_rate * dk
 
     return losses, val_losses, layers

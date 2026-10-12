@@ -21,7 +21,7 @@ def save_model(layers, epochs, learning_rate, metrics):
             raise ValueError("Browser export requires alternating DenseLayer and ActivationLayer")
         pairs.append((layers[i], layers[i + 1].activation))
     OUT.mkdir(parents=True, exist_ok=True)
-    arrays = {f'{name}{i}': getattr(layer, name)
+    arrays = {f'{name}{i}': layer.weights[name]
               for i, (layer, _) in enumerate(pairs) for name in ('W', 'b')}
     np.savez_compressed(ROOT / f'weights_lr{learning_rate:g}_epoch{epochs}.npz', **arrays,
                         activations=np.array([a.name for _, a in pairs]),
@@ -29,7 +29,7 @@ def save_model(layers, epochs, learning_rate, metrics):
     model = {
         'epochs': epochs, 'learning_rate': learning_rate,
         'input_size': 28, 'pixel_scale': 255, 'metrics': metrics,
-        'layers': [{'W': layer.W.tolist(), 'b': layer.b.ravel().tolist(),
+        'layers': [{'W': layer.weights['W'].tolist(), 'b': layer.weights['b'].ravel().tolist(),
                     'activation': activation.name}
                    for layer, activation in pairs],
     }
@@ -52,26 +52,27 @@ if __name__ == '__main__':
     np.random.seed(42)
     layers = [DenseLayer(784, 128), ActivationLayer(Activation.RELU),
               DenseLayer(128, 10), ActivationLayer(Activation.SOFTMAX)]
+    epochs = 1000
+    learning_rate = 1
     history = []
     start = time.monotonic()
-    for epoch in range(1000):
+    for epoch in range(epochs):
         data = nn_forward(X_train, layers)
         loss = float(Loss.CROSS_ENTROPY.forward(data[-1], Y_train))
         val_predictions = nn_forward(X_val, layers)[-1]
         val_loss = float(Loss.CROSS_ENTROPY.forward(val_predictions, Y_val))
         history.append({'epoch': epoch, 'train_loss': loss, 'val_loss': val_loss})
         grads = nn_backward(Y_train, layers, data, Loss.CROSS_ENTROPY)
-        for layer, (dW, db) in zip(layers, grads):
-            if dW is not None and db is not None:
-                layer.W -= dW
-                layer.b -= db
-        if epoch % 10 == 0 or epoch == 999:
-            print(f'Epoch {epoch+1}/1000: train={loss:.4f}, validation={val_loss:.4f}, elapsed={time.monotonic()-start:.1f}s', flush=True)
+        for layer, gradient in zip(layers, grads):
+            for name, value in gradient.items():
+                layer.weights[name] -= learning_rate * value
+        if epoch % 10 == 0 or epoch == epochs - 1:
+            print(f'Epoch {epoch+1}/{epochs}: train={loss:.4f}, validation={val_loss:.4f}, elapsed={time.monotonic()-start:.1f}s', flush=True)
     predictions = nn_forward(X_val, layers)[-1]
     metrics = {'validation_loss': float(Loss.CROSS_ENTROPY.forward(predictions, Y_val)),
                'validation_accuracy': float(np.mean(predictions.argmax(axis=1) == Y_val.argmax(axis=1))),
                'train_samples': len(X_train), 'validation_samples': len(X_val)}
-    save_model(layers, 1000, 1, metrics)
+    save_model(layers, epochs, learning_rate, metrics)
     (ROOT / 'training_history.json').write_text(json.dumps(history))
     np.savez_compressed(ROOT / 'inference_check.npz', X=X_val[:20],
                         predictions=predictions[:20], labels=Y_val[:20].argmax(axis=1))

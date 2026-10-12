@@ -23,6 +23,6 @@ def nn_backward(Y: np.ndarray, layers: list[Layer], layers_data: list[np.ndarray
     gradients = [None] * n
 
     for i in reversed(range(n)):
-        upstream_gradient, dw, db = layers[i].backward(layers_data[i], upstream_gradient)
-        gradients[i] = (dw, db)
+        upstream_gradient, gradient = layers[i].backward(layers_data[i], upstream_gradient)
+        gradients[i] = gradient
     return gradients
